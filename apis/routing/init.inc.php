@@ -54,23 +54,15 @@ class API_ROUTING
         {
             debug_log($this->classname . ": command prefix detected");
 
+            // this might be a direct message OR a message sent as a mention,
+            // so we deliberately remove the generic mention sequence in order to
+            // support both methods of conversation. It ain't much, but it's honest work.
+            $message = $GLOBALS['layer7_stanza']['message']['text'] = str_replace('@segvault_spacecorebot', '', $message);
+		
             $trigger = ltrim(explode(' ', trim($message))[0], '/');
             debug_log($this->classname . ": command trigger detected: $trigger");
 
             $classname = $this->resolve($trigger);
-						if ( ! $classname )
-						{
-							$_chr_pos = strpos($trigger, '@');
-							if ( $_chr_pos !== false )
-							{
-								$_sub_trigger = substr($trigger, 0, $_chr_pos);
-								$classname = $this->resolve($_sub_trigger);
-								if($classname)
-								{
-									$trigger = $_sub_trigger;
-								}
-							}
-						}
 
             if ($classname)
             {

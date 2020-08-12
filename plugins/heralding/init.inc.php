@@ -62,14 +62,14 @@ class PLUGIN_HERALDING
 
         if($chatid < 0)
         {
-						debug_log($this->classname . ": WAS GROUP MESSAGE");
+            debug_log($this->classname . ": THIS IS A GROUP MESSAGE");
             
-						if($chatid !== $keymemberChannel)
-						{
-							// only reply if we're asked directly. Do not reply to channel messages.
-							// except keymembers group
-							return;
-						}
+            if($chatid != $keymemberChannel)
+            {
+                // only reply if we're asked directly. Do not reply to channel messages.
+                // except keymembers group
+                return;
+            }
         }
 
         if(!$spacestate)
