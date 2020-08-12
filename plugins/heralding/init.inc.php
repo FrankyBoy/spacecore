@@ -62,8 +62,14 @@ class PLUGIN_HERALDING
 
         if($chatid < 0)
         {
-            // only reply if we're asked directly. Do not reply to channel messages.
-            return;
+						debug_log($this->classname . ": WAS GROUP MESSAGE");
+            
+						if($chatid !== $keymemberChannel)
+						{
+							// only reply if we're asked directly. Do not reply to channel messages.
+							// except keymembers group
+							return;
+						}
         }
 
         if(!$spacestate)
@@ -85,7 +91,7 @@ class PLUGIN_HERALDING
 
         }
 
-        switch($trigger)
+        switch(strtolower($trigger))
         {
             case "startup":
 

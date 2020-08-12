@@ -58,6 +58,20 @@ class API_ROUTING
             debug_log($this->classname . ": command trigger detected: $trigger");
 
             $classname = $this->resolve($trigger);
+						if ( ! $classname )
+						{
+							$_chr_pos = strpos($trigger, '@');
+							if ( $_chr_pos !== false )
+							{
+								$_sub_trigger = substr($trigger, 0, $_chr_pos);
+								$classname = $this->resolve($_sub_trigger);
+								if($classname)
+								{
+									$trigger = $_sub_trigger;
+								}
+							}
+						}
+
             if ($classname)
             {
                 $access_permitted = false;
@@ -137,9 +151,22 @@ class API_ROUTING
         }
     }
 
+		private function to_lower($string)
+		{
+			if(function_exists('mb_strtolower')){
+				return mb_strtolower($string);
+			}else{
+				return strtolower($string);
+			}
+		}
 
     public function register($trigger, $classname, $description = NULL)
     {
+        $this->hooks[$trigger] = $classname;
+				$trigger_lower = $this->to_lower($trigger);
+				if($trigger_lower !== $trigger){
+					$this->hooks[$trigger_lower] = $classname;
+				}
         $this->hooks[$trigger] = $classname;
         debug_log($this->classname . ": registered class $classname on trigger $trigger");
     }
@@ -160,7 +187,15 @@ class API_ROUTING
         }
         else
         {
-            error_log($this->classname . ": could not resolve trigger $trigger");
+						$trigger_lower = $this->to_lower($trigger);
+						if($trigger_lower !== $trigger){
+							$res = $this->resolve($trigger_lower);
+							if(! $res ){
+								error_log($this->classname . ": could not resolve trigger $trigger");
+							}
+							return $res;
+						}
+						error_log($this->classname . ": could not resolve trigger $trigger");
             return false;
         }
     }
