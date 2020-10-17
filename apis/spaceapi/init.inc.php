@@ -4,10 +4,13 @@
  * This program is free software licensed under the terms of the GNU General Public License v3 (GPLv3).
  */
 
+include_once __DIR__."/../../object_broker.inc.php";
+
+
 class API_SPACEAPI
 {
-    private $object_broker;
-    private $classname;
+    private OBJECT_BROKER $object_broker;
+    private string $classname;
 
     private $sensor_config = [
         'temperature' => [

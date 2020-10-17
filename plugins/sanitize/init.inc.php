@@ -4,10 +4,12 @@
  * This program is free software licensed under the terms of the GNU General Public License v3 (GPLv3).
  */
 
+include_once __DIR__."/../../object_broker.inc.php";
+
 class PLUGIN_SANITIZE
 {
-    private $object_broker;
-    private $classname;
+    private OBJECT_BROKER $object_broker;
+    private string $classname;
     const ACL_MODE = 'none';    // white, black, none
 
 
@@ -20,18 +22,10 @@ class PLUGIN_SANITIZE
         $this->object_broker->logger->debug($this->classname . ": starting up");
     }
 
-
-    public function __destruct()
-    {
-
-    }
-
-
     public function get_acl_mode()
     {
         return self::ACL_MODE;
     }
-
 
     public function router_preprocess()
     {

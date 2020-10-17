@@ -4,10 +4,12 @@
  * This program is free software licensed under the terms of the GNU General Public License v3 (GPLv3).
  */
 
+include_once __DIR__."/../../object_broker.inc.php";
+
 class PLUGIN_EVENTS
 {
-    private $object_broker;
-    private $classname;
+    private OBJECT_BROKER $object_broker;
+    private string $classname;
     const ACL_MODE = 'black';    // white, black, none
 
 
@@ -21,12 +23,6 @@ class PLUGIN_EVENTS
     }
 
 
-    public function __destruct()
-    {
-
-    }
-
-
     public function get_acl_mode()
     {
         return self::ACL_MODE;
@@ -35,8 +31,6 @@ class PLUGIN_EVENTS
 
     public function router_preprocess_photo()
     {
-        //$this->object_broker->logger->error(print_r($GLOBALS['layer7_stanza'], true));
-
         // the photo array is ordered by filesize (ascending)
         // so the largest file is at the end of the array
         $photo_data = end($GLOBALS['layer7_stanza']['message']['photo']);

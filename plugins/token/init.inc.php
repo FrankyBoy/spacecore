@@ -4,15 +4,17 @@
  * This program is free software licensed under the terms of the GNU General Public License v3 (GPLv3).
  */
 
+include_once __DIR__."/../../object_broker.inc.php";
+
 class PLUGIN_TOKEN
 {
-    private $object_broker;
-    private $classname;
+    private OBJECT_BROKER $object_broker;
+    private string $classname;
     const ACL_MODE = 'none';    // white, black, none
 
-    private $random_characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-';
-    private $random_length = 10;
-    private $kill_tokens_sec = 60*60*24; // 1 day
+    private string $random_characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-';
+    private int $random_length = 10;
+    private int $kill_tokens_sec = 60*60*24; // 1 day
     private $token_cache = NULL;
     private $token_fast_lookup = NULL;
     private $token_cache_needs_push = false;

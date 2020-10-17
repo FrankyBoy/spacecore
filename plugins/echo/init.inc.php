@@ -4,10 +4,13 @@
  * This program is free software licensed under the terms of the GNU General Public License v3 (GPLv3).
  */
 
+include_once __DIR__."/../../object_broker.inc.php";
+
+
 class PLUGIN_ECHO
 {
-    private $object_broker;
-    private $classname;
+    private OBJECT_BROKER $object_broker;
+    private string $classname;
     const ACL_MODE = 'white';    // white, black, none
 
     public function __construct($object_broker)
@@ -22,12 +25,6 @@ class PLUGIN_ECHO
         $this->object_broker->instance['api_routing']->register("whisper", $this->classname, "Repeats the received message body to the sender via PM");
         $this->object_broker->instance['api_routing']->helptext("echo", "", "Repeats the received message body back to the current channel");
         $this->object_broker->instance['api_routing']->helptext("whisper", "", "Repeats the received message body to the sender via PM");
-    }
-
-
-    public function __destruct()
-    {
-
     }
 
 

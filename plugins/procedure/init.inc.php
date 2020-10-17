@@ -4,10 +4,12 @@
  * This program is free software licensed under the terms of the GNU General Public License v3 (GPLv3).
  */
 
+include_once __DIR__."/../../object_broker.inc.php";
+
 class PLUGIN_PROCEDURE
 {
-    private $object_broker;
-    private $classname;
+    private OBJECT_BROKER $object_broker;
+    private string $classname;
     const ACL_MODE = 'none';    // white, black, none
 
     public function __construct($object_broker)
@@ -21,13 +23,6 @@ class PLUGIN_PROCEDURE
         $this->object_broker->instance['api_routing']->register("teardown", $this->classname, "Procedure to shutdown the space");
         $this->object_broker->instance['api_routing']->helptext("teardown", "", "Procedure to shutdown the space");
     }
-
-
-    public function __destruct()
-    {
-
-    }
-
 
     public function get_acl_mode()
     {
