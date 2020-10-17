@@ -24,7 +24,7 @@ class PLUGIN_TOKEN
 
         $this->object_broker = $object_broker;
         $object_broker->plugins[] = $this->classname;
-        debug_log($this->classname . ": starting up");
+        $this->object_broker->logger->debug($this->classname . ": starting up");
     }
 
 
@@ -36,13 +36,13 @@ class PLUGIN_TOKEN
     private function token_cache_init(){
         if( is_null($this->token_cache) )
         {
-            $tokens = $this->object_broker->instance['core_persist']->retrieve('procedure.tokens');
+            $tokens = $this->object_broker->datastore->retrieve('procedure.tokens');
             if($tokens)
             {
                 $tokens_decoded = json_decode($tokens, TRUE, 3);
                 if( is_null($tokens_decoded) )
                 {
-                   error_log("token_cache_init: could not decode JSON");
+                    $this->object_broker->logger->error("token_cache_init: could not decode JSON");
                    $this->token_cache = array();
                    $this->token_fast_lookup = array();
                    return;
@@ -80,7 +80,7 @@ class PLUGIN_TOKEN
 
     private function push_cache(){
         $json = json_encode($this->token_cache);
-        $this->object_broker->instance['core_persist']->store('procedure.tokens', $json);
+        $this->object_broker->datastore->store('procedure.tokens', $json);
         $this->token_cache_needs_push = false;
     }
 
@@ -148,7 +148,7 @@ class PLUGIN_TOKEN
 
     public function router_housekeeping(){
         $this->token_cache_init();
-        debug_log("token cache consists of ".count($this->token_cache)." elements");
+        $this->object_broker->logger->debug("token cache consists of ".count($this->token_cache)." elements");
         $this->kill_invalid_tokens();
         $this->kill_outdated_tokens();
 

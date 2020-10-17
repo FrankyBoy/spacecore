@@ -16,7 +16,7 @@ class API_TELEGRAM
 
         $this->object_broker = $object_broker;
         $object_broker->apis[] = 'api_telegram';
-        debug_log($this->classname . ": starting up");
+        $this->object_broker->logger->debug($this->classname . ": starting up");
     }
 
 
@@ -67,17 +67,17 @@ class API_TELEGRAM
                 array_push($kb, $row);
             }
             $params['reply_markup'] = json_encode( ["inline_keyboard" => $kb ] );
-            debug_log($this->classname . ":reply_markup=".$params['reply_markup']);
+            $this->object_broker->logger->debug($this->classname . ":reply_markup=".$params['reply_markup']);
         }
 
         // send request
         $result = $this->call_curl("sendMessage", $params);
-        debug_log($this->classname . ":sendMessage: $result");
+        $this->object_broker->logger->debug($this->classname . ":sendMessage: $result");
         
         $result_arr = json_decode($result, true);
         if($result_arr == null)
         {
-            debug_log($this->classname . ":sendMessage: response was null");
+            $this->object_broker->logger->debug($this->classname . ":sendMessage: response was null");
             return false;
         }
         if($result_arr['ok'] == 'true')
@@ -104,7 +104,7 @@ class API_TELEGRAM
 
         // send request
         $result = $this->call_curl("deleteMessage", $params);
-        debug_log($this->classname . ":deleteMessage: $result");
+        $this->object_broker->logger->debug($this->classname . ":deleteMessage: $result");
     }
 
 
@@ -119,7 +119,7 @@ class API_TELEGRAM
 
         // send request
         $result = $this->call_curl("sendLocation", $params);
-        debug_log($this->classname . ":sendLocation: $result");
+        $this->object_broker->logger->debug($this->classname . ":sendLocation: $result");
     }
 
     public function download_resource($file_id, $destination)
@@ -143,16 +143,16 @@ class API_TELEGRAM
             if(in_array($resource_extension, $config['allowed_photo_extensions']))
             {
                 file_put_contents($destination . '.' . $resource_extension, file_get_contents($resource_location));
-                debug_log($this->classname . ":getFile: $file_id saved to $destination . '.' . $resource_extension");
+                $this->object_broker->logger->debug($this->classname . ":getFile: $file_id saved to $destination . '.' . $resource_extension");
             }
             else
             {
-                error_log($this->classname . ":getFile: failed (extension $resource_extension not whitelisted, file_id $file_id)");
+                $this->object_broker->logger->error($this->classname . ":getFile: failed (extension $resource_extension not whitelisted, file_id $file_id)");
             }
         }
         else
         {
-            error_log($this->classname . ":getFile: failed (whoops). Trace: $result");
+            $this->object_broker->logger->error($this->classname . ":getFile: failed (whoops). Trace: $result");
         }
 
     }

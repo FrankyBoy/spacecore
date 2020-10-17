@@ -1,23 +1,15 @@
 <?php
-/*
- * Copyright (C) 2019, Daniel Haslinger <creo+oss@mesanova.com>
- * This program is free software licensed under the terms of the GNU General Public License v3 (GPLv3).
- */
 
-class CORE_PERSIST
+
+class DataStore
 {
-    private $object_broker;
-    private $classname;
-    private $db;
+    private \SQLite3 $db;
+    private Logger $logger;
 
-    public function __construct($object_broker)
+    public function __construct(Logger $logger)
     {
-        $this->classname = strtolower(static::class);
-
-        $this->object_broker = $object_broker;
-        $object_broker->apis[] = $this->classname;
-        debug_log($this->classname . ": starting up");
-
+        $this->logger = $logger;
+        $this->logger->debug(DataStore::class . ": starting up");
         $this->setup();
     }
 
@@ -32,7 +24,7 @@ class CORE_PERSIST
     public function setup()
     {
         // Prepare the database
-        $this->db = new SQLite3($this->classname . '.sqlite3', SQLITE3_OPEN_CREATE | SQLITE3_OPEN_READWRITE);
+        $this->db = new SQLite3('core_persist.sqlite3', SQLITE3_OPEN_CREATE | SQLITE3_OPEN_READWRITE);
 
         // some plugins may do things that take longer but keep the sqlite connection open, so we increase the timeout¿
         $this->db->busyTimeout(10000);

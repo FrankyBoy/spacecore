@@ -1,44 +1,23 @@
 <?php
-/*
- * Copyright (C) 2019, Daniel Haslinger <creo+oss@mesanova.com>
- * This program is free software licensed under the terms of the GNU General Public License v3 (GPLv3).
- */
 
-require("config.inc.php");
+require_once __DIR__ . "/core/DataStore.php";
+require_once __DIR__ . "/core/Logger.php";
 
-error_reporting(E_ALL);
-ini_set('display_errors', 'on');
-ini_set("error_log", $config['error_log']);
+require_once("config.inc.php");
+global $config;
 
+$logger = new Logger();
 
-
-global $_print_debugs;
-$_print_debugs = false;
-if(array_key_exists('suppress_debug', $config))
-{
-    $_print_debugs = !( $config['suppress_debug'] );
-}else{
-    error_log("'suppress_debug' is not defined - defaulting to 'true', consider defining it explicit in the config file!");
-    $_print_debugs = false;
-}
-
-function debug_log($msg)
-{
-    global $_print_debugs;
-    if($_print_debugs)
-    {
-        error_log($msg);
-    }
-}
-
-debug_log("");
-debug_log("WAKEUP");
-
+$logger->debug("");
+$logger->debug("WAKEUP");
 
 include_once('object_broker.inc.php');
 $object_broker = new OBJECT_BROKER();
 
-$load_order = ['core' => 'core', 'apis' => 'api', 'plugins' => 'plugin']; // dir => prefix
+$object_broker->logger = $logger;
+$object_broker->datastore = new DataStore($object_broker->logger);
+
+$load_order = ['apis' => 'api', 'plugins' => 'plugin']; // dir => prefix
 foreach(array_keys($load_order) as $load_item)
 {
     $sub_dirs = array_filter(glob($load_item.'/*'), 'is_dir');
@@ -54,10 +33,10 @@ foreach(array_keys($load_order) as $load_item)
                $classname = strtoupper($prefix).'_'.strtoupper($dir_base);
                $index = $prefix.'_' . $dir_base;
                $object_broker->instance[$index] = new $classname($object_broker);
-               debug_log("$classname loaded as $index");
+               $logger->debug("$classname loaded as $index");
            }
        }else{
-           error_log("Directory for $load_item $plugin_classname exists, but no 'init.inc.php' file was found");
+           $logger->error("Directory for $load_item $classname exists, but no 'init.inc.php' file was found");
        }
     }
 }
@@ -66,7 +45,7 @@ foreach(array_keys($load_order) as $load_item)
 if(php_sapi_name() == 'cli')
 {
     // fired up via command line. It's cron time.
-    debug_log("CLI MODE: assuming scheduled invocation");
+    $logger->debug("CLI MODE: assuming scheduled invocation");
 
     // Run through all plugins and execute any housekeeping steps
     foreach ($object_broker->plugins as $registered_plugin) {
@@ -87,11 +66,11 @@ else
     // right now we are not sure if the stuff we received was valid JSON..
     if (json_last_error() === JSON_ERROR_NONE && $layer6_stanza != NULL) {
         // Valid JSON encountered. Treat this as a telegram message
-        debug_log("telegram:receiveMessage: VALID JSON DECODED: '$layer6_stanza'");
+        $logger->debug("telegram:receiveMessage: VALID JSON DECODED: '$layer6_stanza'");
 
         // Is the sender legit?
         if (!isset($_GET['token']) || (isset($_GET['token']) && $_GET['token'] != $config['bot_token'])) {
-            error_log("telegram:SenderAuthentication: Invalid token: " . ( isset($_GET['token']) ? $_GET['token'] : 'NONE' ) );
+            $logger->error("telegram:SenderAuthentication: Invalid token: " . ( isset($_GET['token']) ? $_GET['token'] : 'NONE' ) );
             exit;
         }
 
@@ -132,7 +111,7 @@ else
         // Invalid JSON encountered (for whatever reason, we don't care).
         // Treat this as plain GET/POST requests
 
-        debug_log("getpost:receivePostBody: '$layer6_stanza'");
+        $logger->debug("getpost:receivePostBody: '$layer6_stanza'");
     }
 }
 

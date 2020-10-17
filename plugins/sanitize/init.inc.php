@@ -17,7 +17,7 @@ class PLUGIN_SANITIZE
 
         $this->object_broker = $object_broker;
         $object_broker->plugins[] = $this->classname;
-        debug_log($this->classname . ": starting up");
+        $this->object_broker->logger->debug($this->classname . ": starting up");
     }
 
 
@@ -37,16 +37,16 @@ class PLUGIN_SANITIZE
     {
 
         $current_update_id = $GLOBALS['layer7_stanza']['update_id'];
-        $last_update_id = $this->object_broker->instance['core_persist']->retrieve('update_id');
-        debug_log($this->classname . ":dedup: $last_update_id vs $current_update_id");
+        $last_update_id = $this->object_broker->datastore->retrieve('update_id');
+        $this->object_broker->logger->debug($this->classname . ":dedup: $last_update_id vs $current_update_id");
         if(!$last_update_id)
         {
-            error_log($this->classname . ":dedup: no update id in persistent store -> bootstrapping");
-            $this->object_broker->instance['core_persist']->store('update_id', $current_update_id);
+            $this->object_broker->logger->error($this->classname . ":dedup: no update id in persistent store -> bootstrapping");
+            $this->object_broker->datastore->store('update_id', $current_update_id);
         }
         elseif($last_update_id >= $current_update_id)
         {
-            error_log($this->classname . ":dedup: possible duplicate -> ignoring");
+            $this->object_broker->logger->error($this->classname . ":dedup: possible duplicate -> ignoring");
             if(
                 array_key_exists('message', $GLOBALS['layer7_stanza']) && 
                 array_key_exists('text', $GLOBALS['layer7_stanza']['message']) &&
@@ -58,10 +58,10 @@ class PLUGIN_SANITIZE
                     $herald_ok = $this->object_broker->instance['api_routing']->acl_check_list($senderid, "plugin_heralding", "white");
                     if($herald_ok)
                     {
-                        error_log("reset_dedup");
-                        $this->object_broker->instance['core_persist']->store('update_id', 1);
+                        $this->object_broker->logger->error("reset_dedup");
+                        $this->object_broker->datastore->store('update_id', 1);
                     }else{
-                        error_log("user was not permitted for 'plugin_heralding' and therefore is not allowed to reset the counter");
+                        $this->object_broker->logger->error("user was not permitted for 'plugin_heralding' and therefore is not allowed to reset the counter");
                     }
                 }
             }
@@ -69,7 +69,7 @@ class PLUGIN_SANITIZE
         }
         else
         {
-            $this->object_broker->instance['core_persist']->store('update_id', $current_update_id);
+            $this->object_broker->datastore->store('update_id', $current_update_id);
         }
 
     }

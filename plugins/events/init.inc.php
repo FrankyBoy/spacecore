@@ -17,7 +17,7 @@ class PLUGIN_EVENTS
 
         $this->object_broker = $object_broker;
         $object_broker->plugins[] = $this->classname;
-        debug_log($this->classname . ": starting up");
+        $this->object_broker->logger->debug($this->classname . ": starting up");
     }
 
 
@@ -35,12 +35,12 @@ class PLUGIN_EVENTS
 
     public function router_preprocess_photo()
     {
-        //error_log(print_r($GLOBALS['layer7_stanza'], true));
+        //$this->object_broker->logger->error(print_r($GLOBALS['layer7_stanza'], true));
 
         // the photo array is ordered by filesize (ascending)
         // so the largest file is at the end of the array
         $photo_data = end($GLOBALS['layer7_stanza']['message']['photo']);
-        debug_log($this->classname . ": found image locator" . $photo_data['file_id'] . " (size:" . $photo_data['file_size'] . ")");
+        $this->object_broker->logger->debug($this->classname . ": found image locator" . $photo_data['file_id'] . " (size:" . $photo_data['file_size'] . ")");
 
         // we need an area to dump the files
         if(!is_dir('photos')) mkdir('photos');

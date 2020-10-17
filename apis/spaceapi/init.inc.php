@@ -43,7 +43,7 @@ class API_SPACEAPI
 
         $this->object_broker = $object_broker;
         $object_broker->apis[] = 'api_spaceapi';
-        debug_log($this->classname . ": starting up");
+        $this->object_broker->logger->debug($this->classname . ": starting up");
     }
 
 
@@ -62,7 +62,7 @@ class API_SPACEAPI
         $mqtt_json = json_decode($mqtt_data, TRUE);
         if($mqtt_json == NULL)
         {
-            error_log("JSON ERROR: ".$file_name." was not valid JSON");
+            $this->object_broker->logger->error("JSON ERROR: ".$file_name." was not valid JSON");
             return NULL;
         }
 
@@ -179,7 +179,7 @@ class API_SPACEAPI
 
     private function get_traffic_light()
     {
-        $cp = $this->object_broker->instance['core_persist'];
+        $cp = $this->object_broker->datastore;
         $spacestate = $cp->retrieve('heralding.state');
         switch($spacestate)
         {
@@ -196,7 +196,7 @@ class API_SPACEAPI
 
     private function get_state()
     {
-        $cp = $this->object_broker->instance['core_persist'];
+        $cp = $this->object_broker->datastore;
         $spacestate = $cp->retrieve('heralding.state');
         $spacestate_msg = $cp->retrieve('heralding.msg');
         $spacestate_lastchange_ts = $cp->retrieve('heralding.lastchange.ts');
@@ -221,7 +221,7 @@ class API_SPACEAPI
                 $spaceapi_state_message = "Could not retrieve space state. Halp!";
                 $spaceapi_state_icon_open = "http://www.segvault.space/segvault_logo_yellow.png";
                 $spaceapi_state_icon_closed = "http://www.segvault.space/segvault_logo_yellow.png";
-                error_log("SPACEAPI: Could not retrieve space state. Halp!");
+                $this->object_broker->logger->error("SPACEAPI: Could not retrieve space state. Halp!");
         }
 
         return [
@@ -293,7 +293,7 @@ class API_SPACEAPI
         }
         else {
             // -- that's the deprecated way, which I left here for Clemens in order to let him migrate his code
-            $spacestate = $this->object_broker->instance['core_persist']->retrieve('heralding.state');
+            $spacestate = $this->object_broker->datastore->retrieve('heralding.state');
             $private_array = [];
             $public_array = [];
             global $config;

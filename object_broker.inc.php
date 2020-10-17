@@ -1,11 +1,13 @@
 <?php
-/*
- * Copyright (C) 2019, Daniel Haslinger <creo+oss@mesanova.com>
- * This program is free software licensed under the terms of the GNU General Public License v3 (GPLv3).
- */
+
+include_once __DIR__ . "/core/DataStore.php";
+include_once __DIR__ . "/core/Logger.php";
+
 
 class OBJECT_BROKER
 {
+    public Logger $logger;
+    public DataStore $datastore;
 
     public $instance;             // Holds instanced objects
     public $plugins;              // Holds names of loaded plugins

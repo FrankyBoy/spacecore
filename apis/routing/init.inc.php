@@ -17,7 +17,7 @@ class API_ROUTING
 
         $this->object_broker = $object_broker;
         $object_broker->apis[] = $this->classname;
-        debug_log($this->classname .  ": starting up");
+        $this->object_broker->logger->debug($this->classname .  ": starting up");
 
         $this->hooks = [];
         $this->helptexts = [];
@@ -39,20 +39,20 @@ class API_ROUTING
             $message = $GLOBALS['layer7_stanza']['message']['text'];
             $senderid = $GLOBALS['layer7_stanza']['message']['from']['id'];
         }else if(isset($GLOBALS['layer7_stanza']['callback_query']['data'])){
-            debug_log($this->classname . ": convert from inline");
+            $this->object_broker->logger->debug($this->classname . ": convert from inline");
             $message = $GLOBALS['layer7_stanza']['callback_query']['data'];
             $senderid = $GLOBALS['layer7_stanza']['callback_query']['from']['id'];
             $GLOBALS['layer7_stanza']['message']['text'] = $message;
             $GLOBALS['layer7_stanza']['message']['chat']['id'] = $senderid;
             $GLOBALS['layer7_stanza']['message']['from'] = $GLOBALS['layer7_stanza']['callback_query']['from'];
         }else{
-            error_log($this->classname . ": MESSAGE COULD NOT BE PARSED");
+            $this->object_broker->logger->error($this->classname . ": MESSAGE COULD NOT BE PARSED");
             return;
         }
 
         if($message[0] == '/')
         {
-            debug_log($this->classname . ": command prefix detected");
+            $this->object_broker->logger->debug($this->classname . ": command prefix detected");
 
             // this might be a direct message OR a message sent as a mention,
             // so we deliberately remove the generic mention sequence in order to
@@ -60,7 +60,7 @@ class API_ROUTING
             $message = $GLOBALS['layer7_stanza']['message']['text'] = str_replace('@segvault_spacecorebot', '', $message);
 		
             $trigger = ltrim(explode(' ', trim($message))[0], '/');
-            debug_log($this->classname . ": command trigger detected: $trigger");
+            $this->object_broker->logger->debug($this->classname . ": command trigger detected: $trigger");
 
             $classname = $this->resolve($trigger);
 
@@ -79,13 +79,13 @@ class API_ROUTING
                         if ($list == 'black')
                         {
                             // The user is blacklisted
-                            error_log($this->classname . ": routing request to $classname for user $senderid refused (blacklisted!)");
+                            $this->object_broker->logger->error($this->classname . ": routing request to $classname for user $senderid refused (blacklisted!)");
                             $access_permitted = false;
                         }
                         elseif ($list == 'white')
                         {
                             // The user is whitelisted
-                            error_log($this->classname . ": routing request to $classname for user $senderid accepted (whitelisted!)");
+                            $this->object_broker->logger->error($this->classname . ": routing request to $classname for user $senderid accepted (whitelisted!)");
                             $access_permitted = true;
                         }
                     }
@@ -94,12 +94,12 @@ class API_ROUTING
                         // The user was NOT found on the list. Let's see what how THAT translates to permissions...
                         if ($list == 'black')
                         {
-                            error_log($this->classname . ": routing request to $classname for user $senderid accepted (not blacklisted!)");
+                            $this->object_broker->logger->error($this->classname . ": routing request to $classname for user $senderid accepted (not blacklisted!)");
                             $access_permitted = true;
                         }
                         elseif ($list == 'white')
                         {
-                            error_log($this->classname . ": routing request to $classname for user $senderid accepted (not whitelisted!)");
+                            $this->object_broker->logger->error($this->classname . ": routing request to $classname for user $senderid accepted (not whitelisted!)");
                             $access_permitted = false;
                         }
                     }
@@ -114,12 +114,12 @@ class API_ROUTING
                 {
                     if (method_exists($this->object_broker->instance[$classname], 'process'))
                     {
-                        debug_log($this->classname . ": routing request to $classname");
+                        $this->object_broker->logger->debug($this->classname . ": routing request to $classname");
                         $this->object_broker->instance[$classname]->process($trigger);
                     }
                     else
                     {
-                        error_log($this->classname . ": the class registered to trigger $trigger is unsupported");
+                        $this->object_broker->logger->error($this->classname . ": the class registered to trigger $trigger is unsupported");
                     }
                 }
                 else
@@ -133,24 +133,24 @@ class API_ROUTING
             {
                 $payload = "Unknown command. Use '/system help' to get more information.";
                 $this->object_broker->instance['api_telegram']->send_message($senderid, $payload);
-                error_log($this->classname . ": no class registered to trigger: $trigger --> sending help text");
+                $this->object_broker->logger->error($this->classname . ": no class registered to trigger: $trigger --> sending help text");
             }
         }
         else
         {
             // that's no command. This branch could facilitate some chatbot feature.
-            debug_log($this->classname . ": no chatmode available yet --> ignoring");
+            $this->object_broker->logger->debug($this->classname . ": no chatmode available yet --> ignoring");
         }
     }
 
-		private function to_lower($string)
-		{
-			if(function_exists('mb_strtolower')){
-				return mb_strtolower($string);
-			}else{
-				return strtolower($string);
-			}
-		}
+    private function to_lower($string)
+    {
+        if(function_exists('mb_strtolower')){
+            return mb_strtolower($string);
+        }else{
+            return strtolower($string);
+        }
+    }
 
     public function register($trigger, $classname, $description = NULL)
     {
@@ -160,13 +160,13 @@ class API_ROUTING
 					$this->hooks[$trigger_lower] = $classname;
 				}
         $this->hooks[$trigger] = $classname;
-        debug_log($this->classname . ": registered class $classname on trigger $trigger");
+        $this->object_broker->logger->debug($this->classname . ": registered class $classname on trigger $trigger");
     }
 
     public function helptext($trigger, $modifier, $description = NULL)
     {
         $this->helptexts[$trigger][$modifier] = $description;
-        debug_log($this->classname . ": registered helptext for trigger $trigger");
+        $this->object_broker->logger->debug($this->classname . ": registered helptext for trigger $trigger");
     }
 
     public function resolve($trigger)
@@ -174,7 +174,7 @@ class API_ROUTING
         if(isset($this->hooks[$trigger]))
         {
             $classname = $this->hooks[$trigger];
-            debug_log($this->classname . ": resolved class $classname from trigger $trigger");
+            $this->object_broker->logger->debug($this->classname . ": resolved class $classname from trigger $trigger");
             return $classname;
         }
         else
@@ -183,11 +183,11 @@ class API_ROUTING
 						if($trigger_lower !== $trigger){
 							$res = $this->resolve($trigger_lower);
 							if(! $res ){
-								error_log($this->classname . ": could not resolve trigger $trigger");
+								$this->object_broker->logger->error($this->classname . ": could not resolve trigger $trigger");
 							}
 							return $res;
 						}
-						error_log($this->classname . ": could not resolve trigger $trigger");
+						$this->object_broker->logger->error($this->classname . ": could not resolve trigger $trigger");
             return false;
         }
     }
@@ -215,10 +215,10 @@ class API_ROUTING
     public function acl_check_list($userid, $classname, $list)
     {
         // retrieve the desired list for this class
-        $acl = $this->object_broker->instance['core_persist']->retrieve('acl_' . $list . "_$classname");
+        $acl = $this->object_broker->datastore->retrieve('acl_' . $list . "_$classname");
         if(!$acl)
         {
-            error_log($this->classname . ": no list $list for class $classname");
+            $this->object_broker->logger->error($this->classname . ": no list $list for class $classname");
             return false;
         }
         else
@@ -227,12 +227,12 @@ class API_ROUTING
             $acl_assoc = json_decode($acl, true);
             if(isset($acl_assoc[$userid]))
             {
-                debug_log($this->classname . ": user $userid is listed on $list for class $classname since EPOCH:" . $acl_assoc[$userid]);
+                $this->object_broker->logger->debug($this->classname . ": user $userid is listed on $list for class $classname since EPOCH:" . $acl_assoc[$userid]);
                 return $acl_assoc[$userid];
             }
             else
             {
-                debug_log($this->classname . ": user $userid is not listed on $list for class $classname");
+                $this->object_broker->logger->debug($this->classname . ": user $userid is not listed on $list for class $classname");
                 return false;
             }
         }
@@ -243,16 +243,16 @@ class API_ROUTING
     {
         if(!ctype_digit($userid))
         {
-            error_log($this->classname . ": userid $userid is invalid and can not be registered to $classname:$list");
+            $this->object_broker->logger->error($this->classname . ": userid $userid is invalid and can not be registered to $classname:$list");
             return false;
         }
 
         // retrieve the desired list for this class
-        $acl = $this->object_broker->instance['core_persist']->retrieve('acl_' . $list . "_$classname");
+        $acl = $this->object_broker->datastore->retrieve('acl_' . $list . "_$classname");
 
         if(!$acl)
         {
-            error_log($this->classname . ": no list $list for class $classname");
+            $this->object_broker->logger->error($this->classname . ": no list $list for class $classname");
             $acl_assoc = [];
         }
         else
@@ -265,15 +265,15 @@ class API_ROUTING
         {
             if(isset($acl_assoc[$userid]))
             {
-                error_log($this->classname . ": registration failed - user $userid was already registered to $list for class $classname since EPOCH:" . $acl_assoc[$userid]);
+                $this->object_broker->logger->error($this->classname . ": registration failed - user $userid was already registered to $list for class $classname since EPOCH:" . $acl_assoc[$userid]);
                 return false;
             }
             else
             {
                 $acl_assoc[$userid] = time();
                 $acl = json_encode($acl_assoc);
-                $this->object_broker->instance['core_persist']->store('acl_' . $list . "_$classname", $acl);
-                error_log($this->classname . ": registration successful - user $userid is now registered to $list for class $classname");
+                $this->object_broker->datastore->store('acl_' . $list . "_$classname", $acl);
+                $this->object_broker->logger->error($this->classname . ": registration successful - user $userid is now registered to $list for class $classname");
                 return true;
             }
         }
@@ -283,13 +283,13 @@ class API_ROUTING
             {
                 unset($acl_assoc[$userid]);
                 $acl = json_encode($acl_assoc);
-                $this->object_broker->instance['core_persist']->store('acl_' . $list . "_$classname", $acl);
-                error_log($this->classname . ": unregister successful - user $userid successfully removed from $list for class $classname");
+                $this->object_broker->datastore->store('acl_' . $list . "_$classname", $acl);
+                $this->object_broker->logger->error($this->classname . ": unregister successful - user $userid successfully removed from $list for class $classname");
                 return false;
             }
             else
             {
-                error_log($this->classname . ": unregister failed - user $userid not found on list $list for class $classname");
+                $this->object_broker->logger->error($this->classname . ": unregister failed - user $userid not found on list $list for class $classname");
             }
         }
     }

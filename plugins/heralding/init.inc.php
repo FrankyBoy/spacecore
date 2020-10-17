@@ -16,7 +16,7 @@ class PLUGIN_HERALDING
 
         $this->object_broker = $object_broker;
         $object_broker->plugins[] = $this->classname;
-        debug_log($this->classname . ": starting up");
+        $this->object_broker->logger->debug($this->classname . ": starting up");
 
         $this->object_broker->instance['api_routing']->register("startup", $this->classname, "Boot the space for all audiences");
         $this->object_broker->instance['api_routing']->register("membersonly", $this->classname, "Boot the space for members only");
@@ -43,7 +43,7 @@ class PLUGIN_HERALDING
     {
         global $config;
 
-        debug_log($this->classname . ": processing trigger $trigger");
+        $this->object_broker->logger->debug($this->classname . ": processing trigger $trigger");
 
         $chatid = $GLOBALS['layer7_stanza']['message']['chat']['id'];
         $senderid = $GLOBALS['layer7_stanza']['message']['from']['id'];
@@ -51,10 +51,10 @@ class PLUGIN_HERALDING
 
         $payload = str_replace('/' . $trigger, '', $GLOBALS['layer7_stanza']['message']['text']);
 
-        $spacestate = $this->object_broker->instance['core_persist']->retrieve('heralding.state');
-        $spaceowner = $this->object_broker->instance['core_persist']->retrieve('heralding.owner');
-        $spaceownergecos = $this->object_broker->instance['core_persist']->retrieve('heralding.owner.gecos');
-        $spacetransfer = $this->object_broker->instance['core_persist']->retrieve('heralding.transfer');
+        $spacestate = $this->object_broker->datastore->retrieve('heralding.state');
+        $spaceowner = $this->object_broker->datastore->retrieve('heralding.owner');
+        $spaceownergecos = $this->object_broker->datastore->retrieve('heralding.owner.gecos');
+        $spacetransfer = $this->object_broker->datastore->retrieve('heralding.transfer');
 
         $publicChannel = $config['publicChannelID'];
         $privateChannel = $config['privateChannelID'];
@@ -62,7 +62,7 @@ class PLUGIN_HERALDING
 
         if($chatid < 0)
         {
-            debug_log($this->classname . ": THIS IS A GROUP MESSAGE");
+            $this->object_broker->logger->debug($this->classname . ": THIS IS A GROUP MESSAGE");
             
             if($chatid != $keymemberChannel)
             {
@@ -81,13 +81,13 @@ class PLUGIN_HERALDING
             $spaceownergecos = NULL;
             $spacetransfer = '';
 
-            $this->object_broker->instance['core_persist']->store('heralding.state', $spacestate);
-            $this->object_broker->instance['core_persist']->store('heralding.msg', '');
-            $this->object_broker->instance['core_persist']->store('heralding.owner', '');
-            $this->object_broker->instance['core_persist']->store('heralding.owner.gecos', '');
-            $this->object_broker->instance['core_persist']->store('heralding.transfer', '');
-            $this->object_broker->instance['core_persist']->store('heralding.lastchange.ts', '');
-            $this->object_broker->instance['core_persist']->store('heralding.lastchange.gecos', '');
+            $this->object_broker->datastore->store('heralding.state', $spacestate);
+            $this->object_broker->datastore->store('heralding.msg', '');
+            $this->object_broker->datastore->store('heralding.owner', '');
+            $this->object_broker->datastore->store('heralding.owner.gecos', '');
+            $this->object_broker->datastore->store('heralding.transfer', '');
+            $this->object_broker->datastore->store('heralding.lastchange.ts', '');
+            $this->object_broker->datastore->store('heralding.lastchange.gecos', '');
 
         }
 
@@ -108,22 +108,22 @@ class PLUGIN_HERALDING
                         // Heralding to the public channel
                         $message = "<b>The Vault is now open</b>\n Hosted by: $sendergecos, estimated shutdown: $payload";
                         $this->object_broker->instance['api_telegram']->send_message($publicChannel, $message);
-                        $this->object_broker->instance['core_persist']->store('heralding.msg', 'Estimated shutdown: ' . $payload);
+                        $this->object_broker->datastore->store('heralding.msg', 'Estimated shutdown: ' . $payload);
                     }
                     else
                     {
                         // Heralding to the public channel
                         $message = "<b>The Vault is now open</b>\n Hosted by: $sendergecos";
                         $this->object_broker->instance['api_telegram']->send_message($publicChannel, $message);
-                        $this->object_broker->instance['core_persist']->store('heralding.msg', 'No estimated shutdown time');
+                        $this->object_broker->datastore->store('heralding.msg', 'No estimated shutdown time');
                     }
 
                     // Persist the state
-                    $this->object_broker->instance['core_persist']->store('heralding.state', 'open');
-                    $this->object_broker->instance['core_persist']->store('heralding.owner', $senderid);
-                    $this->object_broker->instance['core_persist']->store('heralding.owner.gecos', $sendergecos);
-                    $this->object_broker->instance['core_persist']->store('heralding.lastchange.ts', time());
-                    $this->object_broker->instance['core_persist']->store('heralding.lastchange.gecos', $sendergecos);
+                    $this->object_broker->datastore->store('heralding.state', 'open');
+                    $this->object_broker->datastore->store('heralding.owner', $senderid);
+                    $this->object_broker->datastore->store('heralding.owner.gecos', $sendergecos);
+                    $this->object_broker->datastore->store('heralding.lastchange.ts', time());
+                    $this->object_broker->datastore->store('heralding.lastchange.gecos', $sendergecos);
                 }
                 elseif($spacestate == 'membersonly')
                 {
@@ -142,10 +142,10 @@ class PLUGIN_HERALDING
                         $this->object_broker->instance['api_telegram']->send_message($privateChannel, $message);
 
                         // Persist the state
-                        $this->object_broker->instance['core_persist']->store('heralding.state', 'open');
-                        $this->object_broker->instance['core_persist']->store('heralding.owner', $senderid);
-                        $this->object_broker->instance['core_persist']->store('heralding.lastchange.ts', time());
-                        $this->object_broker->instance['core_persist']->store('heralding.lastchange.gecos', $sendergecos);
+                        $this->object_broker->datastore->store('heralding.state', 'open');
+                        $this->object_broker->datastore->store('heralding.owner', $senderid);
+                        $this->object_broker->datastore->store('heralding.lastchange.ts', time());
+                        $this->object_broker->datastore->store('heralding.lastchange.gecos', $sendergecos);
                     }
                     else
                     {
@@ -182,23 +182,23 @@ class PLUGIN_HERALDING
                     {
                         // Heralding to the private channel
                         $message = "<b>The Vault is now open to members only</b>\n Hosted by: $sendergecos, estimated shutdown: $payload";
-                        $this->object_broker->instance['core_persist']->store('heralding.msg', 'Estimated shutdown: ' . $payload);
+                        $this->object_broker->datastore->store('heralding.msg', 'Estimated shutdown: ' . $payload);
                     }
                     else
                     {
                         // Heralding to the private channel
                         $message = "<b>The Vault is now open to members only</b>\n Hosted by: $sendergecos";
-                        $this->object_broker->instance['core_persist']->store('heralding.msg', 'No estimated shutdown time');
+                        $this->object_broker->datastore->store('heralding.msg', 'No estimated shutdown time');
                     }
                     $this->object_broker->instance['api_telegram']->send_message($privateChannel, $message);
 
                     // Persist the state
-                    $this->object_broker->instance['core_persist']->store('heralding.state', 'membersonly');
-                    $this->object_broker->instance['core_persist']->store('heralding.owner', $senderid);
-                    $this->object_broker->instance['core_persist']->store('heralding.owner.gecos', $sendergecos);
-                    $this->object_broker->instance['core_persist']->store('heralding.lastchange.ts', time());
-                    $this->object_broker->instance['core_persist']->store('heralding.lastchange.gecos', $sendergecos);
-                    $this->object_broker->instance['core_persist']->store('heralding.msg', 'No estimated shutdown time');
+                    $this->object_broker->datastore->store('heralding.state', 'membersonly');
+                    $this->object_broker->datastore->store('heralding.owner', $senderid);
+                    $this->object_broker->datastore->store('heralding.owner.gecos', $sendergecos);
+                    $this->object_broker->datastore->store('heralding.lastchange.ts', time());
+                    $this->object_broker->datastore->store('heralding.lastchange.gecos', $sendergecos);
+                    $this->object_broker->datastore->store('heralding.msg', 'No estimated shutdown time');
 
                 }
                 elseif($spacestate == 'membersonly')
@@ -219,7 +219,7 @@ class PLUGIN_HERALDING
                         {
                             // Heralding to the private channel
                             $message = "<b>The Vault has switched to members only</b>\n New estimated shutdown: $payload";
-                            $this->object_broker->instance['core_persist']->store('heralding.msg', 'Estimated shutdown: ' . $payload);
+                            $this->object_broker->datastore->store('heralding.msg', 'Estimated shutdown: ' . $payload);
                         }
                         else
                         {
@@ -234,15 +234,15 @@ class PLUGIN_HERALDING
 
                         // Write data to heat file
                         $close_timestamp = time();
-                        $open_timestamp = $this->object_broker->instance['core_persist']->retrieve('heralding.lastchange.ts');
+                        $open_timestamp = $this->object_broker->datastore->retrieve('heralding.lastchange.ts');
                         $open_duration = $close_timestamp - $open_timestamp;
                         $heat_line = "$open_timestamp,$close_timestamp,$open_duration,$spaceowner,$spaceownergecos\n";
                         file_put_contents('heralding.data', $heat_line, FILE_APPEND | LOCK_EX);
 
                         // Persist the state
-                        $this->object_broker->instance['core_persist']->store('heralding.state', 'membersonly');
-                        $this->object_broker->instance['core_persist']->store('heralding.lastchange.ts', time());
-                        $this->object_broker->instance['core_persist']->store('heralding.lastchange.gecos', $sendergecos);
+                        $this->object_broker->datastore->store('heralding.state', 'membersonly');
+                        $this->object_broker->datastore->store('heralding.lastchange.ts', time());
+                        $this->object_broker->datastore->store('heralding.lastchange.gecos', $sendergecos);
                     }
                     else
                     {
@@ -282,12 +282,12 @@ class PLUGIN_HERALDING
                         $this->object_broker->instance['api_telegram']->send_message($privateChannel, $message);
 
                         // Persist the state
-                        $this->object_broker->instance['core_persist']->store('heralding.state', 'closed');
-                        $this->object_broker->instance['core_persist']->store('heralding.owner', '');
-                        $this->object_broker->instance['core_persist']->store('heralding.transfer', '');
-                        $this->object_broker->instance['core_persist']->store('heralding.lastchange.ts', time());
-                        $this->object_broker->instance['core_persist']->store('heralding.lastchange.gecos', $sendergecos);
-                        $this->object_broker->instance['core_persist']->store('heralding.msg', '');
+                        $this->object_broker->datastore->store('heralding.state', 'closed');
+                        $this->object_broker->datastore->store('heralding.owner', '');
+                        $this->object_broker->datastore->store('heralding.transfer', '');
+                        $this->object_broker->datastore->store('heralding.lastchange.ts', time());
+                        $this->object_broker->datastore->store('heralding.lastchange.gecos', $sendergecos);
+                        $this->object_broker->datastore->store('heralding.msg', '');
 
                     }
                     else
@@ -311,18 +311,18 @@ class PLUGIN_HERALDING
 
                         // Write data to heat file
                         $close_timestamp = time();
-                        $open_timestamp = $this->object_broker->instance['core_persist']->retrieve('heralding.lastchange.ts');
+                        $open_timestamp = $this->object_broker->datastore->retrieve('heralding.lastchange.ts');
                         $open_duration = $close_timestamp - $open_timestamp;
                         $heat_line = "$open_timestamp,$close_timestamp,$open_duration,$spaceowner,$spaceownergecos\n";
                         file_put_contents('heralding.data', $heat_line, FILE_APPEND | LOCK_EX);
 
                         // Persist the state
-                        $this->object_broker->instance['core_persist']->store('heralding.state', 'closed');
-                        $this->object_broker->instance['core_persist']->store('heralding.owner', '');
-                        $this->object_broker->instance['core_persist']->store('heralding.transfer', '');
-                        $this->object_broker->instance['core_persist']->store('heralding.lastchange.ts', $close_timestamp);
-                        $this->object_broker->instance['core_persist']->store('heralding.lastchange.gecos', $sendergecos);
-                        $this->object_broker->instance['core_persist']->store('heralding.msg', '');
+                        $this->object_broker->datastore->store('heralding.state', 'closed');
+                        $this->object_broker->datastore->store('heralding.owner', '');
+                        $this->object_broker->datastore->store('heralding.transfer', '');
+                        $this->object_broker->datastore->store('heralding.lastchange.ts', $close_timestamp);
+                        $this->object_broker->datastore->store('heralding.lastchange.gecos', $sendergecos);
+                        $this->object_broker->datastore->store('heralding.msg', '');
                     }
                     else
                     {
@@ -356,7 +356,7 @@ class PLUGIN_HERALDING
                         $this->object_broker->instance['api_telegram']->send_message($keymemberChannel, $message);
 
                         // Persist the transfer state
-                        $this->object_broker->instance['core_persist']->store('heralding.transfer', 'hovering');
+                        $this->object_broker->datastore->store('heralding.transfer', 'hovering');
                     }
                     else
                     {
@@ -398,7 +398,7 @@ class PLUGIN_HERALDING
                             // Heralding to the public channel, since we extended the opening time
                             $message = "The current session is now hosted by: $sendergecos, new estimated shutdown: $payload";
                             $this->object_broker->instance['api_telegram']->send_message($publicChannel, $message);
-                            $this->object_broker->instance['core_persist']->store('heralding.msg', 'Estimated shutdown: ' . $payload);
+                            $this->object_broker->datastore->store('heralding.msg', 'Estimated shutdown: ' . $payload);
                         }
                         else
                         {
@@ -408,11 +408,11 @@ class PLUGIN_HERALDING
                         }
 
                         // Persist the transfer state
-                        $this->object_broker->instance['core_persist']->store('heralding.transfer', '');
-                        $this->object_broker->instance['core_persist']->store('heralding.owner', $senderid);
-                        $this->object_broker->instance['core_persist']->store('heralding.owner.gecos', $sendergecos);
-                        $this->object_broker->instance['core_persist']->store('heralding.lastchange.ts', time());
-                        $this->object_broker->instance['core_persist']->store('heralding.lastchange.gecos', $sendergecos);
+                        $this->object_broker->datastore->store('heralding.transfer', '');
+                        $this->object_broker->datastore->store('heralding.owner', $senderid);
+                        $this->object_broker->datastore->store('heralding.owner.gecos', $sendergecos);
+                        $this->object_broker->datastore->store('heralding.lastchange.ts', time());
+                        $this->object_broker->datastore->store('heralding.lastchange.gecos', $sendergecos);
                     }
                     else
                     {
@@ -448,7 +448,7 @@ class PLUGIN_HERALDING
                             $this->object_broker->instance['api_telegram']->send_message($keymemberChannel, $message);
 
                             // Persist the transfer state
-                            $this->object_broker->instance['core_persist']->store('heralding.transfer', '');
+                            $this->object_broker->datastore->store('heralding.transfer', '');
                         }
                         else
                         {

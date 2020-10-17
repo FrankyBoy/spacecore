@@ -16,7 +16,7 @@ class PLUGIN_PROCEDURE
 
         $this->object_broker = $object_broker;
         $object_broker->plugins[] = $this->classname;
-        debug_log($this->classname . ": starting up");
+        $this->object_broker->logger->debug($this->classname . ": starting up");
 
         $this->object_broker->instance['api_routing']->register("teardown", $this->classname, "Procedure to shutdown the space");
         $this->object_broker->instance['api_routing']->helptext("teardown", "", "Procedure to shutdown the space");
@@ -48,14 +48,14 @@ class PLUGIN_PROCEDURE
 
     public function process($trigger)
     {
-        debug_log($this->classname . ": processing trigger $trigger");
+        $this->object_broker->logger->debug($this->classname . ": processing trigger $trigger");
 
         $chatid = $GLOBALS['layer7_stanza']['message']['chat']['id'];
         $senderid = $GLOBALS['layer7_stanza']['message']['from']['id'];
 
         $payload = str_replace('/' . $trigger, '', $GLOBALS['layer7_stanza']['message']['text']);
         $payload = trim($payload);
-        debug_log($this->classname . ": payload \"$payload\"");
+        $this->object_broker->logger->debug($this->classname . ": payload \"$payload\"");
 
         $herald_ok = $this->object_broker->instance['api_routing']->acl_check_list($senderid, "plugin_heralding", "white");
 
@@ -87,7 +87,7 @@ class PLUGIN_PROCEDURE
                 if($_use_tok && $payload !== "start")
                 {
                     $last_elem = array_slice($payload_arr, -1)[0];
-                    debug_log("last_elem=".$last_elem);
+                    $this->object_broker->logger->debug("last_elem=".$last_elem);
                     $res = $this->object_broker->instance['plugin_token']->consume_token($last_elem);
                     if(!$res)
                     {
@@ -98,7 +98,7 @@ class PLUGIN_PROCEDURE
                 switch($payload_arr[0])
                 {
                     case "start":
-                        $spacestate = $this->object_broker->instance['core_persist']->retrieve('heralding.state');
+                        $spacestate = $this->object_broker->datastore->retrieve('heralding.state');
                         if($spacestate)
                         {
                              if($spacestate != 'closed')
@@ -107,7 +107,7 @@ class PLUGIN_PROCEDURE
                                   {
                                       $this->send_to_user("<b>Optional</b> do you want to change the state?", [ [ "yes: memberonly" => "/membersonly after teardown completion" ] , [ "yes: closed" => "/shutdown" ] ] );
                                   }else{
-                                      $spaceownergecos = $this->object_broker->instance['core_persist']->retrieve('heralding.lastchange.gecos');
+                                      $spaceownergecos = $this->object_broker->datastore->retrieve('heralding.lastchange.gecos');
                                       if($spaceownergecos)
                                       {
                                           $this->send_to_user("Ask ".$spaceownergecos." if a change in the spacestate should be performed!");
@@ -123,8 +123,8 @@ class PLUGIN_PROCEDURE
                         $this->send_to_user("Clear Tables", [ [ "all clear" => "/teardown tables_clear".$tok_string ] ]);
                         break;
                     case "tables_clear":
-                        $last_swipe_dry = $this->object_broker->instance['core_persist']->retrieve('procedure.swipes.dry.last');
-                        $last_swipe_wet = $this->object_broker->instance['core_persist']->retrieve('procedure.swipes.wet.last');
+                        $last_swipe_dry = $this->object_broker->datastore->retrieve('procedure.swipes.dry.last');
+                        $last_swipe_wet = $this->object_broker->datastore->retrieve('procedure.swipes.wet.last');
 
                         $info_str = "";
                         if($last_swipe_dry || $last_swipe_wet)
@@ -152,7 +152,7 @@ class PLUGIN_PROCEDURE
                         ]);
                         break;
                     case "swiped_dry":
-                        $swipes = $this->object_broker->instance['core_persist']->retrieve('procedure.swipes.dry');
+                        $swipes = $this->object_broker->datastore->retrieve('procedure.swipes.dry');
                         if(!$swipes)
                         {
                             $swipes = 1;
@@ -161,18 +161,18 @@ class PLUGIN_PROCEDURE
                             $swipes += 1;
                         }
                         $this->send_to_user("Thank you!\n\nSwipes (dry) so far: ".$swipes);
-                        $this->object_broker->instance['core_persist']->store('procedure.swipes.dry', $swipes);
+                        $this->object_broker->datastore->store('procedure.swipes.dry', $swipes);
 
                         $tz = new DateTimeZone('Europe/Vienna');
                         $_now = new DateTime(null, $tz);
                         $_time = $_now->format(DATE_ATOM);
-                        $this->object_broker->instance['core_persist']->store('procedure.swipes.dry.last', $_time);
+                        $this->object_broker->datastore->store('procedure.swipes.dry.last', $_time);
 
 
                         $this->send_to_user("Align the chairs", [ [ "aligned" => "/teardown chairs_aligned".$tok_string ] ]);
                         break;
                     case "swiped_wet":
-                        $swipes = $this->object_broker->instance['core_persist']->retrieve('procedure.swipes.wet');
+                        $swipes = $this->object_broker->datastore->retrieve('procedure.swipes.wet');
                         if(!$swipes)
                         {
                             $swipes = 1;
@@ -181,12 +181,12 @@ class PLUGIN_PROCEDURE
                             $swipes += 1;
                         }
                         $this->send_to_user("Thank you!\n\nSwipes (wet) so far: ".$swipes);
-                        $this->object_broker->instance['core_persist']->store('procedure.swipes.wet', $swipes);
+                        $this->object_broker->datastore->store('procedure.swipes.wet', $swipes);
 
                         $tz = new DateTimeZone('Europe/Vienna');
                         $_now = new DateTime(null, $tz);
                         $_time = $_now->format(DATE_ATOM);
-                        $this->object_broker->instance['core_persist']->store('procedure.swipes.wet.last', $_time);
+                        $this->object_broker->datastore->store('procedure.swipes.wet.last', $_time);
 
                         $this->send_to_user("Align the chairs", [ [ "aligned" => "/teardown chairs_aligned".$tok_string ] ]);
                         break;
@@ -244,12 +244,12 @@ class PLUGIN_PROCEDURE
                             {
                                 $msg_id = $this->send_to_user("Reminder: ".$config['keysafe'], null);
                                 $this->send_to_user("Lock inner space door!", [ [ "locked" => "/teardown locked ".$msg_id.$tok_string ] ]);
-                                $this->object_broker->instance['core_persist']->store('procedure.msg_id', $msg_id);
+                                $this->object_broker->datastore->store('procedure.msg_id', $msg_id);
                             }else{
                                 $this->send_to_user("Lock inner space door!", [ [ "locked" => "/teardown locked".$tok_string] ]);
                             }
                         }else{
-                            $spaceownergecos = $this->object_broker->instance['core_persist']->retrieve('heralding.lastchange.gecos');
+                            $spaceownergecos = $this->object_broker->datastore->retrieve('heralding.lastchange.gecos');
                             if($spaceownergecos)
                             {
                                 $this->send_to_user("Ask ".$spaceownergecos." to lock the inner door!");
@@ -259,7 +259,7 @@ class PLUGIN_PROCEDURE
                         }
                         break;
                     case "locked":
-                        $msg_id = $this->object_broker->instance['core_persist']->retrieve('procedure.msg_id');                          
+                        $msg_id = $this->object_broker->datastore->retrieve('procedure.msg_id');
                         if( count($payload_arr) >= 2 )
                         {
                             if(is_numeric($payload_arr[1]))
@@ -282,14 +282,14 @@ class PLUGIN_PROCEDURE
                         {
                             delete_msg($msg_id);
                         }
-                        $spacestate = $this->object_broker->instance['core_persist']->retrieve('heralding.state');
+                        $spacestate = $this->object_broker->datastore->retrieve('heralding.state');
                         if($spacestate)
                         {
                              if($spacestate != 'closed')
                              {
                                  if(!$herald_ok)
                                  {
-                                      $spaceownergecos = $this->object_broker->instance['core_persist']->retrieve('heralding.lastchange.gecos');
+                                      $spaceownergecos = $this->object_broker->datastore->retrieve('heralding.lastchange.gecos');
                                       if($spaceownergecos)
                                       {
                                           $this->send_to_user("Ask ".$spaceownergecos." if a change in the space state should be performed!");
@@ -302,7 +302,7 @@ class PLUGIN_PROCEDURE
                                      $GLOBALS['layer7_stanza']['message']['text'] = "/shutdown";
                                      $this->object_broker->instance['api_routing']->route_text();
 
-                                     $spacestate = $this->object_broker->instance['core_persist']->retrieve('heralding.state');
+                                     $spacestate = $this->object_broker->datastore->retrieve('heralding.state');
                                      if(!$spacestate || $spacestate != 'closed')
                                      {
                                          $this->send_to_user("Sending /shutdown ...\n\ndid it work?", [ ["NO" => "/shutdown" ], ["YES" => "/teardown closed".$tok_string ] ] );

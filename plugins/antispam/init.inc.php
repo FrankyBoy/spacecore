@@ -24,7 +24,7 @@ class PLUGIN_ANTISPAM
 
         $this->object_broker = $object_broker;
         $object_broker->plugins[] = $this->classname;
-        debug_log($this->classname . ": starting up");
+        $this->object_broker->logger->debug($this->classname . ": starting up");
 
     }
 
@@ -46,7 +46,7 @@ class PLUGIN_ANTISPAM
 
     public function router_preprocess_text()
     {
-        debug_log($this->classname . ": preprocessing message");
+        $this->object_broker->logger->debug($this->classname . ": preprocessing message");
 
         $chatid = $GLOBALS['layer7_stanza']['message']['chat']['id'];
         $msgid = $GLOBALS['layer7_stanza']['message']['message_id'];
@@ -65,14 +65,12 @@ class PLUGIN_ANTISPAM
 
         if($hitcount == count($spamarray))
         {
-            error_log($this->classname . ": spam detected");
+            $this->object_broker->logger->error($this->classname . ": spam detected");
             $this->object_broker->instance['api_telegram']->delete_message($chatid, $msgid);
             $this->object_broker->instance['api_telegram']->send_message($chatid, "SPAM REMOVED. Bad dog! BAD!");
             exit;
         }
-
     }
-
 }
 
 ?>
