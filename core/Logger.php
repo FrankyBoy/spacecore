@@ -27,15 +27,22 @@ class Logger
 
     public function debug($msg)
     {
-        if($this->_print_debugs)
-        {
-            error_log($msg);
+        if ($this->_print_debugs) {
+            $this->log($msg);
         }
     }
 
     // for now just pass through
     public function error($msg)
     {
-        error_log($msg);
+        $this->log($msg);
+    }
+
+    private function log($msg){
+        $backtrace = debug_backtrace();
+        if(array_key_exists(2, $backtrace))
+            error_log($backtrace[2]['class'].'.'.$backtrace[2]['function'].': '.$msg);
+        else
+            error_log('ROOT: '.$msg);
     }
 }

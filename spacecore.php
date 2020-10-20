@@ -36,7 +36,7 @@ foreach(array_keys($load_order) as $load_item)
                $logger->debug("$classname loaded as $index");
            }
        }else{
-           $logger->error("Directory for $load_item $classname exists, but no 'init.inc.php' file was found");
+           $logger->error("Directory for $load_item exists, but no 'init.inc.php' file was found");
        }
     }
 }
