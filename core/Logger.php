@@ -27,8 +27,7 @@ class Logger
 
     public function debug($msg)
     {
-        global $_print_debugs;
-        if($_print_debugs)
+        if($this->_print_debugs)
         {
             error_log($msg);
         }
